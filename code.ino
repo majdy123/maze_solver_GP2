@@ -1,4 +1,4 @@
-// naser tayher pass from here 
+
 
 
 
@@ -37,10 +37,10 @@ float oldErrorP ;
 float totalError ;
 int offset = 5 ;
 
-int wall_threshold = 8 ;
+int wall_threshold = 10 ;
 //int left_threshold = 10 ;
 //int right_threshold = 10 ;
-int front_threshold = 10 ;
+int front_threshold = 5 ;
 
 boolean frontwall ;
 boolean leftwall ;
@@ -55,6 +55,7 @@ boolean leftWallFollow ;
 float leftarray[5];
 float rightarray[5];
 float frontarray[5];
+float error =0 ,derivative = 0;
 int array_counter = 0;
 
 int en1 = 2 ;
@@ -66,7 +67,7 @@ int en4 = 5 ;
 int enA = 10 ;
 int enB = 11 ;
 
-int baseSpeed = 0 ;
+int baseSpeed = 20 ;
 
 int RMS ;
 int LMS ;
@@ -114,73 +115,115 @@ void setup() {
 }
 
 void loop() {
-
+ 
 
   //Reading the sensors Data.
   ReadSensors();
 
+  //Detect wall.
   walls();
 
+  //Speed control.
+  speed_control2();
 
-  if ( first_turn == false ) {
-
-    pid_start();
-
-  }
-  else if (leftWallFollow == true ) {
-
-    PID(true) ;
-
-  }
-  else if (rightWallFollow == true ) {
-    PID(false) ;
-  }
-
-
-  if (leftwall == true && rightwall == false && frontwall == true ) {
-
-    // turnright();
-    PID(false) ;
-
-    if ( first_turn == false ) {
-
-      //      right_threshold = right_threshold - offset ;
-      //      left_threshold = left_threshold + offset ;
+  if(leftwall == true){
+    if(frontwall == true){
+      if(rightwall == false){
+        //go right.
+        //go forward.
+      }else {
+        //turn 180 deg
+      }
+    }else{
+      //go forward.
+    }
+  }else{
+    //go left.
+    //go forward.
+  };
 
 
-      first_turn = true ;
-      rightWallFollow = true ;
+
+  if(frontwall == false && leftwall == true && rightwall == true){
+    //move forward.
+    setDirection(FORWARD);
+
+  }else if(frontwall == true && leftwall == true && rightwall == false){
+    //move to the right.
+    setDirection(RIGHT);
+
+  }else if(frontwall == true && rightwall == true && leftwall == false){
+    //move to the left.
+    setDirection(LEFT);
+
+  }else if(frontwall == true && rightwall == false && leftwall == false){
+    //go left
+    setDirection(LEFT);
+
+  }else if(frontwall == true && leftwall == true && leftwall == true){
+    //turn 180 deg.
+  };
+
+
+
+
+  // if ( first_turn == false ) {
+
+  //   pid_start();
+
+  // }
+  // else if (leftWallFollow == true ) {
+
+  //   PID(true) ;
+
+  // }
+  // else if (rightWallFollow == true ) {
+  //   PID(false) ;
+  // }
+
+
+  // if (leftwall == true && rightwall == false && frontwall == true ) {
+
+  //   // turnright();
+  //   PID(false) ;
+
+  //   if ( first_turn == false ) {
+
+  //     //      right_threshold = right_threshold - offset ;
+  //     //      left_threshold = left_threshold + offset ;
+
+
+  //     first_turn = true ;
+  //     rightWallFollow = true ;
       
-      digitalWrite(led2 , LOW );
-      digitalWrite(led1 ,HIGH );
-    }
-  }
-   if (leftwall == false && rightwall == true && frontwall == true ) {
+  //     digitalWrite(led2 , LOW );
+  //     digitalWrite(led1 ,HIGH );
+  //   }
+  // }
+  //  if (leftwall == false && rightwall == true && frontwall == true ) {
 
-    //  turnleft();
-    PID(true) ;
+  //   //  turnleft();
+  //   PID(true) ;
 
-    if ( first_turn == false ) {
+  //   if ( first_turn == false ) {
 
-      //      left_threshold = left_threshold - offset ;
-      //      right_threshold = right_threshold + offset ;
+  //     //      left_threshold = left_threshold - offset ;
+  //     //      right_threshold = right_threshold + offset ;
 
-      first_turn = true ;
-      leftWallFollow = true ;
-      digitalWrite(LED , HIGH);
+  //     first_turn = true ;
+  //     leftWallFollow = true ;
+  //     digitalWrite(LED , HIGH);
        
-    }
-  }
-   if ( leftSensor == 0 || leftSensor > 100 && rightSensor == 0 || rightSensor > 100 && frontSensor == 0 || frontSensor > 100 ) {
+  //   }
+  // }
+  //  if ( leftSensor == 0 || leftSensor > 100 && rightSensor == 0 || rightSensor > 100 && frontSensor == 0 || frontSensor > 100 ) {
 
-    setDirection(STOP);
-  }
+  //   setDirection(STOP);
+  // }
 
 
 
   // read sensors & print the result to the serial monitor //
-
-
   // Serial.print(" Left : ");
   // Serial.print(leftSensor);
   // Serial.print(" cm ");
@@ -190,18 +233,16 @@ void loop() {
   // Serial.print(" Front : ");
   // Serial.print(frontSensor);
   // Serial.println(" cm ");
-  Serial.print("   left-wall : ");
-  Serial.print(leftwall);
-  Serial.print("   front-wall : ");
-  Serial.print(frontwall);
-  Serial.print("   right-wall : ");
-  Serial.println(rightwall);
+  // Serial.print("   left-wall : ");
+  // Serial.print(leftwall);
+  // Serial.print("   front-wall : ");
+  // Serial.print(frontwall);
+  // Serial.print("   right-wall : ");
+  // Serial.println(rightwall);
   // Serial.print(" left motor speed : ");
   // Serial.print(LMS);
   // Serial.print(" right motor speed : ");
   // Serial.println(RMS);
-
-//delay(1000);
 
   //measure error & print the result to the serial monitor
   //Serial.print("error=");
@@ -209,6 +250,39 @@ void loop() {
 
 
 }
+
+void speed_control2(){
+  if ( leftwall ==true && rightwall == true){
+    //Define PID control parameters
+    float KP = 0.5 ; // Proportional gain
+    float KI = 0.5; // Integral gain
+    float KD = 0.5; // Derivative gain
+    //Initialize variables
+    float previous_error = 0;
+    float integral = 0;
+    //Calculate the error
+    error = leftSensor - rightSensor;
+    // Calculate the integral and derivative terms
+    integral = integral + error;
+    derivative = error - previous_error;
+    // Calculate the motor speeds based on PID control
+    LMS = (baseSpeed + (KP * error) + (KI * integral) + (KD * derivative));
+    RMS = (baseSpeed - (KP * error) - (KI * integral) - (KD * derivative));
+
+    // Apply any constraints to motor speeds (e.g., limit them between 0 and 100)
+    LMS = max(0, min(LMS, 100)); 
+    RMS = max(0, min(RMS, 100)); 
+    // Apply the motor speeds to your robot
+    // You can use these values to control your motors accordingly
+    Serial.print("Left Motor Speed:           ");
+    Serial.println(LMS);
+    Serial.print("Right Motor Speed:           ");
+    Serial.println(RMS);
+    // Update previous error for the next iteration
+    previous_error = error; 
+  };
+};
+
 
 //--------------------------------- direction control ---------------------------------//
 
