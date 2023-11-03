@@ -144,27 +144,6 @@ void loop() {
 
 
 
-  if(frontwall == false && leftwall == true && rightwall == true){
-    //move forward.
-    setDirection(FORWARD);
-
-  }else if(frontwall == true && leftwall == true && rightwall == false){
-    //move to the right.
-    setDirection(RIGHT);
-
-  }else if(frontwall == true && rightwall == true && leftwall == false){
-    //move to the left.
-    setDirection(LEFT);
-
-  }else if(frontwall == true && rightwall == false && leftwall == false){
-    //go left
-    setDirection(LEFT);
-
-  }else if(frontwall == true && leftwall == true && leftwall == true){
-    //turn 180 deg.
-  };
-
-
 
 
   // if ( first_turn == false ) {
